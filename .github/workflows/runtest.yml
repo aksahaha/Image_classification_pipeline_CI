@@ -1,0 +1,40 @@
+name: Sanity test 2
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  test_model:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - uses: iterative/setup-cml@v2
+
+      - name: Run unit tests
+        run: |
+          pip install -r requirements.txt
+          python -m test 2>&1 | tee test_output.txt
+
+      - name: Create CML report
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "## Test Output" > report.md
+          echo '```' >> report.md
+          cat test_output.txt >> report.md
+          echo '```' >> report.md
+
+          echo "## Metrics from training" >> report.md
+          cat metrics.csv >> report.md
+
+          cml comment create report.md
